@@ -449,6 +449,53 @@ func ShowMenu(display *ssd1306.Device, patterns []string, selected int) {
 	display.Display()
 }
 
+// ClickDetector handles button click detection
+type ClickDetector struct {
+	lastButtonState bool
+	lastClickTime   time.Time
+	clickCount      int
+}
+
+// NewClickDetector creates a new click detector
+func NewClickDetector() *ClickDetector {
+	return &ClickDetector{
+		lastButtonState: false,
+		lastClickTime:   time.Now().Add(-1 * time.Second), // Start with old time
+		clickCount:      0,
+	}
+}
+
+// CheckClick returns: (singleClick bool, doubleClick bool)
+func (cd *ClickDetector) CheckClick(buttonPressed bool) (bool, bool) {
+	singleClick := false
+	doubleClick := false
+	
+	// Detect button release (click)
+	if !buttonPressed && cd.lastButtonState {
+		// Button just released
+		timeSinceLastClick := time.Since(cd.lastClickTime)
+		
+		println("[BTN] Click detected! Time since last:", timeSinceLastClick.Milliseconds(), "ms")
+		
+		if timeSinceLastClick < 400*time.Millisecond {
+			// Double click detected
+			doubleClick = true
+			cd.clickCount++
+			println("[BTN] DOUBLE CLICK detected! Total clicks:", cd.clickCount)
+			cd.lastClickTime = time.Now().Add(-1 * time.Second) // Reset
+		} else {
+			// Single click
+			singleClick = true
+			cd.clickCount++
+			println("[BTN] Single click detected. Total clicks:", cd.clickCount)
+			cd.lastClickTime = time.Now()
+		}
+	}
+	
+	cd.lastButtonState = buttonPressed
+	return singleClick, doubleClick
+}
+
 func main() {
 	// Configure I2C pins to match your wiring
 	// Your wiring: SDA=GPIO21, SCL=GPIO22 (standard ESP32)
@@ -503,59 +550,74 @@ func main() {
 		"toad",
 	}
 	
-	// MENU MODE
-	menuMode := true
 	selectedPattern := 0
-	lastButtonState := true
-	buttonPressTime := time.Now()
 	
-	for menuMode {
-		// Show menu
-		ShowMenu(display, patterns, selectedPattern)
-		
-		// Check button
-		buttonPressed := !button.Get()
-		
-		if buttonPressed && lastButtonState && time.Since(buttonPressTime) > 200*time.Millisecond {
-			// Short press = next pattern
-			selectedPattern = (selectedPattern + 1) % len(patterns)
-			buttonPressTime = time.Now()
-		} else if buttonPressed && time.Since(buttonPressTime) > 1000*time.Millisecond {
-			// Long press (1 second) = select and start
-			menuMode = false
-			time.Sleep(300 * time.Millisecond) // Debounce
-		}
-		
-		lastButtonState = buttonPressed
-		time.Sleep(50 * time.Millisecond)
-	}
+	println("[INIT] Game of Life Starting...")
+	println("[INIT] Button connected to GPIO18")
+	println("[INIT] Controls: Single click=scroll/next, Double click=select/menu")
 	
-	// GAME MODE
-	grid := NewGridWithPattern(patternKeys[selectedPattern])
-	generation := 0
-	lastButtonState = true
-	
-	// Main game loop
+	// Main loop - alternates between menu and game mode
 	for {
-		// Check button (pressed = LOW on pullup)
-		buttonPressed := !button.Get()
-		if buttonPressed && lastButtonState {
-			// Button pressed - cycle to next pattern
-			selectedPattern = (selectedPattern + 1) % len(patterns)
-			grid = NewGridWithPattern(patternKeys[selectedPattern])
-			generation = 0
-			time.Sleep(200 * time.Millisecond) // Debounce
+		// MENU MODE
+		println("[MENU] Entering menu mode. Selected:", selectedPattern)
+		detector := NewClickDetector()
+		
+		for {
+			// Show menu
+			ShowMenu(display, patterns, selectedPattern)
+			
+			// Check button
+			buttonPressed := !button.Get()
+			single, double := detector.CheckClick(buttonPressed)
+			
+			if single {
+				selectedPattern = (selectedPattern + 1) % len(patterns)
+				println("[MENU] Scrolled to:", patterns[selectedPattern])
+			}
+			
+			if double {
+				println("[MENU] Pattern selected:", patterns[selectedPattern])
+				time.Sleep(200 * time.Millisecond)
+				break // Exit menu mode
+			}
+			
+			time.Sleep(50 * time.Millisecond)
 		}
-		lastButtonState = buttonPressed
 		
-		// Draw current generation
-		grid.DrawToOLED(display)
+		// GAME MODE
+		println("[GAME] Starting pattern:", patterns[selectedPattern])
+		grid := NewGridWithPattern(patternKeys[selectedPattern])
+		generation := 0
+		detector = NewClickDetector() // Reset detector
 		
-		// Compute next generation
-		grid = grid.Next()
-		generation++
-		
-		// Delay between frames
-		time.Sleep(100 * time.Millisecond)
+		gameRunning := true
+		for gameRunning {
+			// Check button
+			buttonPressed := !button.Get()
+			single, double := detector.CheckClick(buttonPressed)
+			
+			if single {
+				selectedPattern = (selectedPattern + 1) % len(patterns)
+				println("[GAME] Switched to:", patterns[selectedPattern])
+				grid = NewGridWithPattern(patternKeys[selectedPattern])
+				generation = 0
+			}
+			
+			if double {
+				println("[GAME] Returning to menu")
+				gameRunning = false
+				time.Sleep(200 * time.Millisecond)
+			}
+			
+			// Draw current generation
+			grid.DrawToOLED(display)
+			
+			// Compute next generation
+			grid = grid.Next()
+			generation++
+			
+			// Delay between frames
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
