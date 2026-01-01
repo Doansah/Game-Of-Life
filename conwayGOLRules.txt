@@ -1,0 +1,10 @@
+Grid: Infinite 2D grid of live/dead cells.
+
+Neighbors: Each cell has 8 neighbors (horizontal, vertical, diagonal).
+
+Transitions (Simultaneous):
+Underpopulation: Live cell with < 2 live neighbors dies.
+Survival: Live cell with 2 or 3 live neighbors lives.
+Overpopulation: Live cell with > 3 live neighbors dies.
+Reproduction: Dead cell with exactly 3 live neighbors becomes live. 
+
