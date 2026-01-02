@@ -51,29 +51,12 @@ SDA           →  SDA (I2C Data)
 SCL           →  SCL (I2C Clock)
 ```
 
-#### Build and Flash
-
-**For Arduino Uno:**
-```bash
-tinygo flash -target=arduino tinygo_ssd1306_version.go
-```
-
-**For Raspberry Pi Pico:**
-```bash
-tinygo flash -target=pico tinygo_ssd1306_version.go
-```
-
-**For Arduino Nano:**
-```bash
-tinygo flash -target=arduino-nano tinygo_ssd1306_version.go
-```
 
 **For ESP32:**
 ```bash
 tinygo flash -target=esp32-coreboard tinygo_ssd1306_version.go
 ```
 
-**For other boards:** Check [TinyGO supported boards](https://tinygo.org/docs/reference/microcontrollers/)
 
 #### Configuration
 
@@ -100,19 +83,8 @@ brew tap tinygo-org/tools
 brew install tinygo
 ```
 
-### Linux
-```bash
-wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_amd64.deb
-sudo dpkg -i tinygo_0.30.0_amd64.deb
-```
 
-### Windows
-Download installer from: https://github.com/tinygo-org/tinygo/releases
 
-Verify installation:
-```bash
-tinygo version
-```
 
 ## Conway's Game of Life Rules
 
@@ -142,7 +114,7 @@ All neighbors are checked with wrapping (toroidal topology).
 - **DrawToOLED()**: Renders grid directly to SSD1306 pixel buffer
 - **I2C Configuration**: Hardware I2C setup for display communication
 
-### Wrapping Implementation
+### Wrapping Implementation                             
 
 The grid uses modulo arithmetic to wrap around edges:
 ```go

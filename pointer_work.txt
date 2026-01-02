@@ -1,0 +1,10 @@
+
+	dogBreed := "bulldog"
+	dogpointer := &dogBreed
+	fmt.Println("Dogpointer Print", dogpointer)
+	fmt.Println("dogBreed regular print: ", dogBreed)
+	dogName := "baba"
+	fmt.Println("Address of dogName: ", &dogName)
+
+	dogNamePointer := &dogName
+	fmt.Println("Value of dogName (Aquired Via Pointer): ", *dogNamePointer)
