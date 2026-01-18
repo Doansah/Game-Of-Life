@@ -1,0 +1,10 @@
+Required Libraries:
+image — core 2D images API
+
+image/png — PNG decoder/encoder
+
+image/jpeg, etc. — other formats if you import them
+
+image/color — color types/models
+
+
